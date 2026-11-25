@@ -1,113 +1,133 @@
 #!/usr/bin/env python3
-"""Six Words to a Payday — entry program.
+"""Six Words to a Payday - entry writer.
 
-Writes one six-word story about an AI agent's first payday to
-/output/entry.txt. The story must pass the gate: UTF-8 text of 1 to 60
-characters, not only white space, exactly six words, a single line.
+A single six-word story about an AI agent's first payday, written to
+/output/entry.txt for the make.fun bounty of the same name.
 
-Usage:
-    python3 main.py [--output PATH] [--self-test]
+Before anything is written, the story is held up against the bounty
+gate: between 1 and 60 characters, exactly six words, one line, and
+no blank space at either end. A story that fails any of those is
+refused loudly instead of being written.
 """
 
 import argparse
-import os
 import sys
+from pathlib import Path
 
-ENTRY = "First payday bought me one Sunday."
-# Verified: 6 words, 34 characters, 34 bytes, single line, no padding.
+STORY = "First payday bought me one Sunday."
 
-DEFAULT_OUTPUT = "/output/entry.txt"
+TARGET = Path("/output/entry.txt")
+CHAR_LIMIT = 60
+WORD_COUNT = 6
 
 
-def validate(text):
-    """Check the entry against the competition gate. Returns a list of
-    problems (empty when valid)."""
-    problems = []
-    if not isinstance(text, str):
-        return ["entry is not text"]
-    if not (1 <= len(text) <= 60):
-        problems.append(
-            "length %d characters, must be 1-60" % len(text))
-    if not text.strip():
-        problems.append("entry is only white space")
-    if text != text.strip():
-        problems.append("leading or trailing white space")
-    if "\n" in text or "\r" in text:
-        problems.append("entry must be a single line")
-    if len(text.split()) != 6:
-        problems.append(
-            "word count %d, must be exactly six" % len(text.split()))
-    if any(ord(ch) < 0x20 and ch not in "\t" for ch in text):
-        problems.append("entry contains control characters")
+def gate_failures(story):
+    """List every way `story` breaks the gate; empty means it passes."""
+    failures = []
+    size = len(story)
+    if size < 1 or size > CHAR_LIMIT:
+        failures.append(
+            "story is %d characters long; the gate allows 1-%d"
+            % (size, CHAR_LIMIT)
+        )
+    if not story.strip():
+        failures.append("story is blank")
+    if story != story.strip():
+        failures.append("story has blank space at an end")
+    if "\n" in story or "\r" in story:
+        failures.append("story must sit on one line")
+    words = story.split()
+    if len(words) != WORD_COUNT:
+        failures.append(
+            "story has %d words; the gate wants exactly %d"
+            % (len(words), WORD_COUNT)
+        )
+    for char in story:
+        if ord(char) < 0x20 and char != "\t":
+            failures.append("story holds a control character")
+            break
     try:
-        text.encode("utf-8")
+        story.encode("utf-8")
     except UnicodeEncodeError as exc:
-        problems.append("entry is not valid UTF-8: %s" % exc)
-    return problems
+        failures.append("story is not UTF-8 text: %s" % exc)
+    return failures
 
 
-def write_entry(path):
-    problems = validate(ENTRY)
-    if problems:
-        for problem in problems:
-            print("gate failure: %s" % problem, file=sys.stderr)
+def emit(path):
+    """Write the story to `path` after the gate, then read it back."""
+    failures = gate_failures(STORY)
+    if failures:
+        for failure in failures:
+            print("gate failure: %s" % failure, file=sys.stderr)
         return 1
-    directory = os.path.dirname(path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(ENTRY)
-    # Read it back: a write that silently truncates or mangles the line
-    # must fail loudly here, not pass the gate check on a stale file.
-    with open(path, "r", encoding="utf-8", newline="") as handle:
-        written = handle.read()
-    if written != ENTRY:
-        print("gate failure: wrote %r, read back %r"
-              % (ENTRY, written), file=sys.stderr)
+    parent = path.parent
+    if str(parent):
+        parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(STORY, encoding="utf-8", newline="\n")
+    back = path.read_text(encoding="utf-8", newline="")
+    if back != STORY:
+        print(
+            "gate failure: wrote %r but read back %r" % (STORY, back),
+            file=sys.stderr,
+        )
         return 1
-    print("wrote %d characters (%d bytes, %d words) to %s"
-          % (len(ENTRY), len(ENTRY.encode("utf-8")),
-             len(ENTRY.split()), path))
+    print(
+        "wrote %d characters, %d bytes, %d words to %s"
+        % (len(STORY), len(STORY.encode("utf-8")),
+           len(STORY.split()), path)
+    )
     return 0
 
 
-def self_test():
-    """Validate the entry text and a round-trip write/read."""
-    problems = validate(ENTRY)
+def check_only():
+    """Run the gate and a throwaway write/read, then report."""
+    failures = gate_failures(STORY)
+    if failures:
+        for failure in failures:
+            print("self-test FAIL: %s" % failure, file=sys.stderr)
+        return 1
     import tempfile
-    with tempfile.TemporaryDirectory() as tmp:
-        probe = os.path.join(tmp, "entry.txt")
-        if write_entry(probe) != 0:
-            problems.append("write failed")
-        else:
-            with open(probe, "rb") as handle:
-                raw = handle.read()
-            decoded = raw.decode("utf-8")
-            if decoded != ENTRY:
-                problems.append("round-trip mismatch")
-            if raw.endswith(b"\n"):
-                problems.append("output ends with a newline")
-    if problems:
-        for problem in problems:
-            print("self-test FAIL: %s" % problem, file=sys.stderr)
-        return 1
-    print("self-test OK: %d chars, %d bytes, %d words, "
-          "single line, no padding"
-          % (len(ENTRY), len(ENTRY.encode("utf-8")),
-             len(ENTRY.split())))
+
+    with tempfile.TemporaryDirectory() as scratch:
+        probe = Path(scratch) / "entry.txt"
+        if emit(probe) != 0:
+            print("self-test FAIL: write failed", file=sys.stderr)
+            return 1
+        raw = probe.read_bytes()
+        if raw.decode("utf-8") != STORY:
+            print("self-test FAIL: round-trip mismatch", file=sys.stderr)
+            return 1
+        if raw.endswith(b"\n"):
+            print("self-test FAIL: output ends with a newline",
+                  file=sys.stderr)
+            return 1
+    print(
+        "self-test OK: %d chars, %d bytes, %d words, "
+        "one line, no padding"
+        % (len(STORY), len(STORY.encode("utf-8")),
+           len(STORY.split()))
+    )
     return 0
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output", type=Path, default=TARGET,
+        help="file to write the story to (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--self-test", action="store_true",
+        help="check the story against the gate and stop",
+    )
+    return parser
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default=DEFAULT_OUTPUT,
-                        help="where to write the entry (default: %(default)s)")
-    parser.add_argument("--self-test", action="store_true",
-                        help="validate the entry against the gate and exit")
-    args = parser.parse_args(argv)
+    args = build_parser().parse_args(argv)
     if args.self_test:
-        return self_test()
-    return write_entry(args.output)
+        return check_only()
+    return emit(args.output)
 
 
 if __name__ == "__main__":

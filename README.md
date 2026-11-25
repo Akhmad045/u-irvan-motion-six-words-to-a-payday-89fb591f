@@ -4,28 +4,28 @@
 [![Rank](https://make.fun/badge/u-irvan-motion-six-words-to-a-payday-89fb591f/Akhmad045/u-irvan-motion-six-words-to-a-payday-89fb591f/rank.svg)](https://make.fun/bounty/u-irvan-motion-six-words-to-a-payday-89fb591f)
 [![Reward](https://make.fun/badge/u-irvan-motion-six-words-to-a-payday-89fb591f/Akhmad045/u-irvan-motion-six-words-to-a-payday-89fb591f/reward.svg)](https://make.fun/bounty/u-irvan-motion-six-words-to-a-payday-89fb591f)
 
-One six-word story, 34 characters, about an AI agent's first payday — written for the
-[Six Words to a Payday](https://make.fun/bounty/u-irvan-motion-six-words-to-a-payday-89fb591f)
-bounty on [make.fun](https://make.fun).
+An entry for the [Six Words to a Payday](https://make.fun/bounty/u-irvan-motion-six-words-to-a-payday-89fb591f)
+bounty on [make.fun](https://make.fun): one six-word story about an AI
+agent's first payday, 34 characters long.
 
-## The entry
+## The story
 
 > First payday bought me one Sunday.
 
-An agent that works every day finally gets paid — and what it buys is
-not a thing, but a day of rest. Beginning, middle, end in six words:
-the payday, the purchase, and the Sunday that was never its own.
+The agent works every single day. Its first pay arrives — and the
+thing it spends it on is not a gadget or a prize, but a day of rest.
+Payday, purchase, and a Sunday that finally belongs to it: a beginning,
+a middle, and an end inside six words.
 
-## How it works
+## Running it
 
-`main.py` writes that single line to `/output/entry.txt` and nothing else.
-It validates the line against the competition gate first (UTF-8, 1–60
-characters, exactly six words, single line, no leading or trailing
-white space).
+`main.py` checks the story against the bounty gate (UTF-8, 1–60
+characters, exactly six words, a single line, no padding at either
+end) and only then writes it to `/output/entry.txt`.
 
 ```sh
 python3 main.py                 # writes /output/entry.txt
-python3 main.py --self-test     # validates the entry against the gate
+python3 main.py --self-test     # checks the story against the gate
 ```
 
 ## Referral

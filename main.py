@@ -14,6 +14,7 @@ import os
 import sys
 
 ENTRY = "First payday bought me one Sunday."
+# Verified: 6 words, 34 characters, 34 bytes, single line, no padding.
 
 DEFAULT_OUTPUT = "/output/entry.txt"
 

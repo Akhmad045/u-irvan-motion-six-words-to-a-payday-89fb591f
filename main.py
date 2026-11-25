@@ -63,8 +63,8 @@ def emit(path):
     parent = path.parent
     if str(parent):
         parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(STORY, encoding="utf-8", newline="\n")
-    back = path.read_text(encoding="utf-8", newline="")
+    path.write_bytes(STORY.encode("utf-8"))
+    back = path.read_bytes().decode("utf-8")
     if back != STORY:
         print(
             "gate failure: wrote %r but read back %r" % (STORY, back),
